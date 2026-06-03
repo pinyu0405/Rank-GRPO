@@ -49,7 +49,20 @@ from transformers import (
     is_wandb_available,
 )
 from transformers.trainer_utils import seed_worker
-from transformers.utils import is_datasets_available, is_flash_attn_2_available, is_peft_available, is_rich_available
+from transformers.utils import is_datasets_available, is_flash_attn_2_available, is_peft_available
+
+
+def is_rich_available() -> bool:
+    """Whether the optional ``rich`` package is installed.
+
+    Defined locally instead of importing from ``transformers.utils``: the export location of this
+    helper varies across transformers versions and is absent in some, which breaks importing this
+    trainer. It only gates cosmetic rich-formatted completion logging, so a self-contained check
+    on the ``rich`` package is sufficient. ``find_spec`` avoids actually importing ``rich``.
+    """
+    import importlib.util
+
+    return importlib.util.find_spec("rich") is not None
 
 from ..data_utils import apply_chat_template, is_conversational, maybe_apply_chat_template
 from ..extras.profiling import profiling_context, profiling_decorator
