@@ -66,11 +66,22 @@ def is_rich_available() -> bool:
 
 from ..data_utils import apply_chat_template, is_conversational, maybe_apply_chat_template
 from ..extras.profiling import profiling_context, profiling_decorator
-from ..extras.vllm_client import VLLMClient
+try:
+    from ..extras.vllm_client import VLLMClient
+except Exception:
+    # extras/vllm_client.py in some prebuilt images chains into vllm_ascend and fails to import.
+    # VLLMClient is only used for vllm_mode="server"; colocate mode (what we use) never needs it.
+    VLLMClient = None
 from ..import_utils import is_liger_kernel_available, is_vllm_available
 from ..models import prepare_deepspeed, prepare_fsdp, unwrap_model_for_generation
 from ..models.utils import _ForwardRedirection
-from .callbacks import SyncRefModelCallback
+try:
+    from .callbacks import SyncRefModelCallback
+except Exception:
+    # callbacks.py pulls optional deps (judges→llm_blender, mergekit_utils→mergekit) that some
+    # prebuilt images lack. SyncRefModelCallback is only used when args.sync_ref_model=True
+    # (default False), so fall back to None instead of failing the whole trainer import.
+    SyncRefModelCallback = None
 from .grpo_config import GRPOConfig
 from .utils import (
     disable_dropout_in_model,
@@ -777,6 +788,8 @@ class RankGRPOTrainer(Trainer):
         # "Could not estimate the number of tokens of the input, floating-point operations will not be computed." To
         # suppress this warning, we set the "estimate_tokens" key in the model's "warnings_issued" dictionary to True.
         # This acts as a flag to indicate that the warning has already been issued.
+        if not hasattr(model, "warnings_issued"):
+            model.warnings_issued = {}
         model.warnings_issued["estimate_tokens"] = True
 
         super().__init__(
