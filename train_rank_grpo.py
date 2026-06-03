@@ -51,6 +51,18 @@ def parse_args():
         ),
     )
     core.add_argument(
+        "--advantage_level",
+        default="rank",
+        choices=["rank", "sequence"],
+        help=(
+            "Advantage granularity for the rank-level vs sequence-level ablation (toy task §5.2.1).\n"
+            "The reward function is identical in both arms — only credit assignment differs:\n"
+            " - rank:     position-specific advantage (Rank-GRPO; default).\n"
+            " - sequence: collapse the per-position rewards into one scalar per rollout and broadcast\n"
+            "             the same advantage to all positions (vanilla-GRPO baseline)."
+        ),
+    )
+    core.add_argument(
         "--catalog_path",
         default="gt_catalog.pkl",
         help="Path to the ground-truth catalog pickle (used for hit/match validation).",
@@ -122,7 +134,8 @@ def main():
 
     # Define model paths and W&B run
     sft_model_path = f"./results/{args.model_name}/checkpoint-{args.sft_checkpoint}"
-    output_dir = f"./results/grpo/{args.model_name}_lr{args.lr}_kl{args.kl_beta}_mu{args.mu}"
+    # Include advantage_level so the rank-level and sequence-level A/B arms write to separate dirs / W&B runs.
+    output_dir = f"./results/grpo/{args.model_name}_lr{args.lr}_kl{args.kl_beta}_mu{args.mu}_adv{args.advantage_level}"
     run_name = setup_wandb(accelerator, output_dir, args.model_name, args.sft_checkpoint, args.seed, args.wandb_project)
 
     # ---------------- Learning rate scheduler ----------------
@@ -165,6 +178,11 @@ def main():
         gradient_checkpointing=args.gradient_checkpointing,
         run_name=run_name,
     )
+
+    # Advantage granularity for the rank-level vs sequence-level ablation (toy task §5.2.1).
+    # GRPOConfig has no such field, so attach it as an instance attribute; the trainer reads it
+    # via getattr(args, "advantage_level", "rank").
+    config.advantage_level = args.advantage_level
 
     # ---------------- Trainer ----------------
     trainer = RankGRPOTrainer(

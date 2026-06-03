@@ -786,6 +786,18 @@ class RankGRPOTrainer(Trainer):
         self.early_stop_penalty = getattr(args, "early_stop_penalty", -0.1) # - penalty of EOS when less than 20
         self.apply_extra_length_shaping = getattr(args, "apply_extra_length_shaping", True)
 
+        # === Advantage granularity for the rank-level vs sequence-level ablation (toy task §5.2.1) ===
+        #   "rank"     : position-specific advantage (default; the Rank-GRPO behavior).
+        #   "sequence" : collapse the per-position reward vector into a single scalar per rollout
+        #                and broadcast the same advantage to every rank position (vanilla-GRPO baseline).
+        # GRPOConfig has no such field, so it is attached to the config instance in train_rank_grpo.py
+        # and read here defensively, matching the getattr() pattern used for the length-shaping knobs.
+        self.advantage_level = getattr(args, "advantage_level", "rank")
+        if self.advantage_level not in ("rank", "sequence"):
+            raise ValueError(
+                f"Unknown advantage_level: {self.advantage_level!r}. Expected 'rank' or 'sequence'."
+            )
+
         # Reference model
         self.beta = args.beta
         if self.beta == 0.0:
@@ -1796,12 +1808,29 @@ class RankGRPOTrainer(Trainer):
         group_means_items = rewards_items.view(Bglob, G, rec_num).mean(dim=1)  # (Bglob, rec_num)
         group_stds_items  = rewards_items.view(Bglob, G, rec_num).std(dim=1)   # (Bglob, rec_num)
 
-        # Normalize to get per-item advantages (flatten back to N_total, rec_num)
-        mean_rep = group_means_items.repeat_interleave(G, dim=0)               # (N_total, rec_num)
-        std_rep  = group_stds_items.repeat_interleave(G, dim=0)                # (N_total, rec_num)
-        advantages_items = rewards_items - mean_rep
-        if self.scale_rewards:
-            advantages_items = advantages_items / (std_rep + 1e-4)             # (N_total, rec_num)
+        if self.advantage_level == "sequence":
+            # === Sequence-level advantage (vanilla-GRPO baseline; toy task §5.2.1) ===
+            # Collapse the per-position reward vector into a single scalar per rollout
+            # (seq_reward = Σ_t rank_reward[t], faithful to the toy task), normalize within the
+            # generation group, then broadcast the SAME advantage to every rank position. This
+            # yields uniform credit assignment — ranks 1..N receive identical updates.
+            seq_rewards     = rewards_items.sum(dim=1, keepdim=True)            # (N_total, 1)
+            group_means_seq = seq_rewards.view(Bglob, G, 1).mean(dim=1)         # (Bglob, 1)
+            group_stds_seq  = seq_rewards.view(Bglob, G, 1).std(dim=1)          # (Bglob, 1)
+            mean_rep = group_means_seq.repeat_interleave(G, dim=0)              # (N_total, 1)
+            std_rep  = group_stds_seq.repeat_interleave(G, dim=0)               # (N_total, 1)
+            advantages_items = seq_rewards - mean_rep
+            if self.scale_rewards:
+                advantages_items = advantages_items / (std_rep + 1e-4)         # (N_total, 1)
+            advantages_items = advantages_items.expand(-1, rec_num).contiguous()  # (N_total, rec_num)
+        else:
+            # === Rank-level advantage (default): position-specific credit assignment ===
+            # Normalize to get per-item advantages (flatten back to N_total, rec_num)
+            mean_rep = group_means_items.repeat_interleave(G, dim=0)           # (N_total, rec_num)
+            std_rep  = group_stds_items.repeat_interleave(G, dim=0)            # (N_total, rec_num)
+            advantages_items = rewards_items - mean_rep
+            if self.scale_rewards:
+                advantages_items = advantages_items / (std_rep + 1e-4)        # (N_total, rec_num)
 
         # Slice to local process
         process_slice = slice(
