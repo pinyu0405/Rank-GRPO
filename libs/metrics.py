@@ -54,3 +54,28 @@ def evaluate_direct_match(item, k, seen_field, rec_field, gt_field, gt_catalog):
     recall = recall_at_k(hits, num_gt, k)
     ndcg = ndcg_at_k(hits, num_gt, k)
     return recall, ndcg
+
+
+def evaluate_direct_match_truncate(item, k, seen_field, rec_field, gt_field, gt_catalog):
+    """Same matching as `evaluate_direct_match`, but the (seen/catalog-filtered)
+    recommendation list is truncated to the top-`k` items before computing Recall@k / NDCG@k."""
+    rec_list_raw = item[rec_field]
+    seen_titles = item[seen_field]
+    rec_list_raw = remove_gt_catalog(remove_seen(seen_titles, rec_list_raw), gt_catalog)
+    rec_list_raw = rec_list_raw[:k]
+    groundtruths = item[gt_field]
+
+    hits = np.zeros(len(rec_list_raw), dtype=int)
+    for gt in groundtruths:
+        name_match_results = [distance(gt[0], rec[0]) for rec in rec_list_raw]
+        year_match_results = [np.abs(int(gt[1]) - int(rec[1])) for rec in rec_list_raw]
+        matched = False
+        for i, (name_res, year_res) in enumerate(zip(name_match_results, year_match_results)):
+            if name_res == 0 and year_res <= 2 and not matched:
+                hits[i] = 1
+                matched = True
+
+    num_gt = len(groundtruths)
+    recall = recall_at_k(hits, num_gt, k)
+    ndcg = ndcg_at_k(hits, num_gt, k)
+    return recall, ndcg
