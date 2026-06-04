@@ -104,6 +104,8 @@ def parse_args():
     log = parser.add_argument_group("Logging / checkpointing")
     log.add_argument("--wandb_project", default="rank_grpo", help="Weights & Biases project name.")
     log.add_argument("--logging_steps", type=int, default=10, help="Logging frequency in steps.")
+    log.add_argument("--log_completions", action="store_true", help="Log sample prompt/completion/reward rows to W&B (and print to console if rich is installed).")
+    log.add_argument("--num_completions_to_print", type=int, default=4, help="How many sample completions to print to the console each log step.")
     log.add_argument("--save_strategy", default="steps", help="Checkpoint save strategy: steps or epoch.")
     log.add_argument("--save_steps", type=int, default=200, help="Save model every N steps.")
     log.add_argument("--save_total_limit", type=int, default=1, help="Max checkpoints to keep; older ones are deleted (1 = keep only the latest, 0 = keep ALL — useful with --save_only_model for plotting metric-vs-step curves).")
@@ -166,6 +168,8 @@ def main():
         save_total_limit=(args.save_total_limit if args.save_total_limit > 0 else None),
         save_only_model=args.save_only_model,
         logging_steps=args.logging_steps,
+        log_completions=args.log_completions,
+        num_completions_to_print=args.num_completions_to_print,
         bf16=args.bf16,
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         learning_rate=args.lr,
