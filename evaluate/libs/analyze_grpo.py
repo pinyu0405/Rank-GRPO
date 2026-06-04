@@ -95,6 +95,7 @@ def plot_rewards(steps, rewards, reward_stds, model_name, output_dir):
     plt.tight_layout()
 
     # Save the plot
+    os.makedirs(output_dir, exist_ok=True)
     plot_path = os.path.join(output_dir, f"{model_name.replace('/','-')}_reward_curve.png")
     plt.savefig(plot_path, dpi=300)
     print(f"✅ Plot saved to {plot_path}")
