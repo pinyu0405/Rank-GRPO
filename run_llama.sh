@@ -3,7 +3,7 @@
 # e.g.   bash run_llama.sh sequence 1500
 # Auto-resumes only if a checkpoint already exists for this arm; otherwise starts fresh.
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
-export WANDB_MODE=${WANDB_MODE:-offline}
+export WANDB_MODE=${WANDB_MODE:-online}
 ADV=${1:-rank}
 STEP=${2:-1500}
 mkdir -p logs

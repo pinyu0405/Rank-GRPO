@@ -4,7 +4,7 @@
 # Requires a 4-GPU instance. ZeRO-3 shards the optimizer across GPUs, so no CPU
 # offload is needed (avoids the DeepSpeed CUDA-compile mismatch).
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
-export WANDB_MODE=${WANDB_MODE:-offline}
+export WANDB_MODE=${WANDB_MODE:-online}
 ADV=${1:-rank}
 STEP=${2:-1500}
 mkdir -p logs
