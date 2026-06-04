@@ -10,7 +10,7 @@ from vllm import LLM, SamplingParams
 from datasets import load_from_disk
 
 # --- GRPO-specific analysis utilities ---
-from libs.analyze_grpo import find_latest_checkpoint, parse_log_history, plot_losses
+from libs.analyze_grpo import find_latest_checkpoint, parse_grpo_log_history, plot_rewards
 from libs.save_eval_state import save_analysis_state
 from libs.log_wandb import merge_and_upload
 
@@ -74,9 +74,8 @@ def main():
     trainer_state_path = os.path.join(latest_ckpt, "trainer_state.json")
 
     print("Parsing GRPO training log history ...")
-    train_steps, train_rewards, eval_steps, eval_rewards = parse_log_history(trainer_state_path)
-    plot_losses(train_steps, train_rewards, eval_steps, eval_rewards,
-                args.model_name, args.output_dir)
+    steps, rewards, reward_stds = parse_grpo_log_history(trainer_state_path)
+    plot_rewards(steps, rewards, reward_stds, args.model_name, args.output_dir)
 
     last_step = int(latest_ckpt.split("-")[-1])
     step_list = list(range(0, last_step + args.step_interval, args.step_interval))

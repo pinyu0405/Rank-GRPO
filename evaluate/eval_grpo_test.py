@@ -21,7 +21,7 @@ from vllm import LLM, SamplingParams
 from datasets import load_from_disk
 
 # --- GRPO-specific analysis utilities ---
-from libs.analyze_grpo import find_latest_checkpoint, parse_log_history, plot_losses
+from libs.analyze_grpo import find_latest_checkpoint, parse_grpo_log_history, plot_rewards
 from libs.save_eval_state import save_analysis_state
 from libs.log_wandb import merge_and_upload
 
