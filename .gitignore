@@ -1,0 +1,14 @@
+# OS / editor junk
+.DS_Store
+__MACOSX/
+
+# Python caches
+__pycache__/
+*.pyc
+
+# Large docs / reports (kept locally, not tracked)
+*.pdf
+
+# Training artifacts / outputs
+wandb/
+results/
