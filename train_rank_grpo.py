@@ -106,6 +106,7 @@ def parse_args():
     log.add_argument("--logging_steps", type=int, default=10, help="Logging frequency in steps.")
     log.add_argument("--save_strategy", default="steps", help="Checkpoint save strategy: steps or epoch.")
     log.add_argument("--save_steps", type=int, default=200, help="Save model every N steps.")
+    log.add_argument("--save_total_limit", type=int, default=1, help="Max checkpoints to keep; older ones are deleted (1 = keep only the latest).")
     log.add_argument("--resume", action="store_true", help="Resume training from the latest checkpoint.")
 
     misc = parser.add_argument_group("Miscellaneous")
@@ -161,6 +162,7 @@ def main():
         num_iterations=args.mu,
         save_strategy=args.save_strategy,
         save_steps=args.save_steps,
+        save_total_limit=args.save_total_limit,
         logging_steps=args.logging_steps,
         bf16=args.bf16,
         gradient_accumulation_steps=args.gradient_accumulation_steps,
