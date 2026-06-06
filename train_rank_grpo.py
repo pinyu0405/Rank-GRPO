@@ -108,8 +108,6 @@ def parse_args():
     log.add_argument("--num_completions_to_print", type=int, default=4, help="How many sample completions to print to the console each log step.")
     log.add_argument("--save_strategy", default="steps", help="Checkpoint save strategy: steps or epoch.")
     log.add_argument("--save_steps", type=int, default=200, help="Save model every N steps.")
-    log.add_argument("--save_total_limit", type=int, default=1, help="Max checkpoints to keep; older ones are deleted (1 = keep only the latest, 0 = keep ALL — useful with --save_only_model for plotting metric-vs-step curves).")
-    log.add_argument("--save_only_model", action="store_true", help="Save only model weights (skip optimizer/scheduler/RNG state). Much smaller checkpoints, but optimizer cannot be resumed.")
     log.add_argument("--resume", action="store_true", help="Resume training from the latest checkpoint.")
 
     misc = parser.add_argument_group("Miscellaneous")
@@ -165,8 +163,6 @@ def main():
         num_iterations=args.mu,
         save_strategy=args.save_strategy,
         save_steps=args.save_steps,
-        save_total_limit=(args.save_total_limit if args.save_total_limit > 0 else None),
-        save_only_model=args.save_only_model,
         logging_steps=args.logging_steps,
         log_completions=args.log_completions,
         num_completions_to_print=args.num_completions_to_print,

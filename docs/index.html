@@ -1,0 +1,95 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rank-GRPO vs. Sequence-GRPO</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script>window.MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']]}};</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+<style>
+ body{font-family:'Noto Sans',sans-serif}
+ .publication-title{font-family:'Google Sans',sans-serif}
+ .hero.is-light{background:#fff} .hero-body{padding-top:3.5rem}
+ .win{color:#1f8a4c;font-weight:700} .lose{color:#c0392b}
+ table.pubtable td:not(:first-child),table.pubtable th:not(:first-child){text-align:right;font-variant-numeric:tabular-nums}
+ .box-chart{padding:1rem} .footer{padding:2rem 1.5rem 3rem}
+ .callout{background:#eef6ff;border-left:4px solid #3273dc;padding:1rem 1.25rem;border-radius:6px}
+ .formula{background:#fafbfc;border:1px solid #eee;border-radius:8px;padding:1rem 1.25rem;margin:.6rem 0}
+</style></head><body>
+<section class="hero is-light"><div class="hero-body"><div class="container has-text-centered">
+ <h1 class="title is-2 publication-title">Rank-GRPO vs. Sequence-GRPO</h1>
+ <h2 class="subtitle is-5">Reproducing rank-level vs. sequence-level credit assignment<br>for LLM conversational recommendation</h2>
+ <div class="is-size-6" style="margin:1rem 0"><span>RL Course Team Project</span> · <span>Reddit-v2 · Qwen2.5-0.5B &amp; Llama-3.2-3B</span></div>
+ <div class="buttons is-centered">
+  <a class="button is-dark is-rounded" href="https://github.com/pinyu0405/Rank-GRPO"><span class="icon"><i class="fab fa-github"></i></span><span>Code</span></a>
+  <a class="button is-dark is-rounded" href="https://arxiv.org/abs/2510.20150"><span class="icon"><i class="fas fa-file-lines"></i></span><span>Paper (Rank-GRPO)</span></a>
+ </div>
+</div></div></section>
+<section class="section"><div class="container" style="max-width:920px">
+ <div class="callout content"><strong>Reproducing rank-level vs. sequence-level credit assignment proposed by Rank-GRPO:</strong><br>On both models, <b>rank-level</b> reward beats the <b>sequence-level</b> (vanilla-GRPO) baseline on every Recall@K and NDCG@K, and the margin <b>grows with K.</b></div>
+
+ <h2 class="title is-4">Abstract</h2>
+ <div class="content"><p>Rank-GRPO (Zhu et&nbsp;al., 2025) trains an LLM recommender with RL using a <b>rank-level</b> reward decomposition (per-position DCG advantage) instead of a single <b>sequence-level</b> scalar advantage. Sequence-level dilutes the gradient uniformly so tail ranks stay weak; rank-level assigns position-specific credit and lifts the whole list. We reproduce the core ablation: both arms share the <b>same SFT start, reward (<code>exp_inf</code>), seed and hyper-parameters</b>, differing <b>only</b> in <code>--advantage_level {rank, sequence}</code>. Evaluation is offline on the held-out test split.</p></div>
+
+ <h2 class="title is-4">Method</h2>
+ <div class="content"><p>Position discount and listwise quality:</p>
+  <div class="formula">$$\mathrm{DCG@K}=\sum_{t=1}^{K}\frac{rel_t}{\log_2(t+1)},\qquad \mathrm{NDCG@K}=\frac{\mathrm{DCG@K}}{\mathrm{IDCG@K}},\qquad r_t=\frac{rel_t}{\log_2(t+1)}\Big/\mathrm{IDCG}.$$</div>
+  <p><b>Rank-level (ours):</b> each rank gets its own normalized advantage —</p>
+  <div class="formula">$$A_t=\frac{r_t-\mu}{\sigma},\qquad \mathcal{L}=-\sum_t A_t\,\log\pi(a_t).$$</div>
+  <p><b>Sequence-level (baseline):</b> one scalar advantage shared across all ranks —</p>
+  <div class="formula">$$R=\sum_t r_t,\qquad A=\frac{R-\mu}{\sigma},\qquad \mathcal{L}=-A\sum_t \log\pi(a_t).$$</div>
+  <p class="has-text-grey is-size-7">Rank-level = position-specific credit; sequence-level shares one scalar, so tail ranks are under-credited.</p>
+ </div>
+
+ <h2 class="title is-4">Results — Llama-3.2-3B <span class="is-size-6 has-text-grey">(both @ step 2400, single A100-80GB)</span></h2>
+ <table class="table is-fullwidth is-striped is-hoverable pubtable">
+  <thead><tr><th>Metric</th><th>Rank-level</th><th>Sequence-level</th><th>Δ</th></tr></thead>
+  <tbody><tr><td>Recall@5</td><td>0.1029</td><td>0.0970</td><td class='win'>+6.1%</td></tr><tr><td>Recall@10</td><td>0.1610</td><td>0.1435</td><td class='win'>+12.2%</td></tr><tr><td>Recall@15</td><td>0.1992</td><td>0.1742</td><td class='win'>+14.3%</td></tr><tr><td>Recall@20</td><td>0.2248</td><td>0.1910</td><td class='win'>+17.7%</td></tr><tr><td>NDCG@5</td><td>0.0812</td><td>0.0750</td><td class='win'>+8.2%</td></tr><tr><td>NDCG@10</td><td>0.1007</td><td>0.0907</td><td class='win'>+10.9%</td></tr><tr><td>NDCG@15</td><td>0.1119</td><td>0.0999</td><td class='win'>+12.1%</td></tr><tr><td>NDCG@20</td><td>0.1190</td><td>0.1044</td><td class='win'>+14.0%</td></tr><tr><td>Catalog hit rate (eval_rec_num)</td><td>0.9967 ± 0.0131</td><td>0.9879 ± 0.0257</td><td class='win'>+0.9%</td></tr></tbody></table>
+ <p class="has-text-grey is-size-7">Rank wins on all 8 ranking metrics; the gap widens from Recall@5 to Recall@20.</p>
+
+ <h2 class="title is-4" style="margin-top:2.5rem">Results — Qwen2.5-0.5B <span class="is-size-6 has-text-grey">(both arms @ step 3000, fair-aligned)</span></h2>
+ <table class="table is-fullwidth is-striped is-hoverable pubtable">
+  <thead><tr><th>Metric</th><th>Rank-level</th><th>Sequence-level</th><th>Δ</th></tr></thead>
+  <tbody><tr><td>Recall@5</td><td>0.0840</td><td>0.0785</td><td class='win'>+7.0%</td></tr><tr><td>Recall@10</td><td>0.1352</td><td>0.1274</td><td class='win'>+6.1%</td></tr><tr><td>Recall@15</td><td>0.1693</td><td>0.1570</td><td class='win'>+7.9%</td></tr><tr><td>Recall@20</td><td>0.1890</td><td>0.1727</td><td class='win'>+9.4%</td></tr><tr><td>NDCG@5</td><td>0.0667</td><td>0.0613</td><td class='win'>+8.7%</td></tr><tr><td>NDCG@10</td><td>0.0840</td><td>0.0779</td><td class='win'>+7.8%</td></tr><tr><td>NDCG@15</td><td>0.0941</td><td>0.0867</td><td class='win'>+8.6%</td></tr><tr><td>NDCG@20</td><td>0.0995</td><td>0.0909</td><td class='win'>+9.5%</td></tr><tr><td>Catalog hit rate (eval_rec_num)</td><td>0.9943 ± 0.0187</td><td>0.9850 ± 0.0293</td><td class='win'>+0.9%</td></tr></tbody></table>
+ <p class="has-text-grey is-size-7"><b>Catalog hit rate (eval_rec_num)</b> = fraction of recommended items that are real catalog movies (title + year±2); higher = less hallucination. It is a grounding axis, separate from relevance (NDCG/Recall).</p>
+ <div class="callout content" style="margin-top:1rem"><b>Why the margin grows with K.</b> Because the sequence-level baseline assigns the <i>same</i> single advantage to every rank, it cannot specifically train the <b>tail positions</b> — the later ranks stay weak, so its performance is worse there and the rank-vs-sequence gap widens as K increases. Rank-level gives each position its own credit, so it keeps improving the tail.</div>
+
+ <h2 class="title is-4" style="margin-top:2.5rem">Validation curves — Qwen2.5-0.5B</h2>
+ <div class="columns">
+  <div class="column"><div class="box box-chart"><canvas id="ndcg"></canvas></div></div>
+  <div class="column"><div class="box box-chart"><canvas id="recall"></canvas></div></div>
+ </div>
+
+ <h2 class="title is-4" style="margin-top:1.5rem">Training reward</h2>
+ <div class="columns">
+  <div class="column has-text-centered"><p class="has-text-grey is-size-7">Qwen rank-level</p><img src="assets/qwen_rank_reward.png"></div>
+  <div class="column has-text-centered"><p class="has-text-grey is-size-7">Qwen sequence-level</p><img src="assets/qwen_seq_reward.png"></div>
+ </div>
+
+ <h2 class="title is-4" style="margin-top:1.5rem">Entropy</h2>
+ <div class="has-text-centered"><img src="assets/entropy.png" style="max-width:100%">
+  <div class="callout content" style="text-align: left;"><b>Rank-level — and the smaller model (Qwen-0.5B) — settle at lower, more stable entropy</b>, i.e. a sharper, more consistent policy.</p></div>
+
+ <h2 class="title is-4" style="margin-top:2rem">BibTeX</h2>
+ <pre style="text-align: left;"><code>@inproceedings{zhu2025rankgrpo,
+  title={Rank-GRPO: Training LLM-based Conversational Recommender Systems with Reinforcement Learning},
+  author={Zhu, Yaochen and Steck, Harald and Liang, Dawen and He, Yinhan and Ostuni, Vito and Li, Jundong and Kallus, Nathan},
+  booktitle={arXiv:2510.20150}, year={2025}}</code></pre>
+</div></section>
+<footer class="footer"><div class="content has-text-centered is-size-7 has-text-grey">
+ <p>Reproduction of Rank-GRPO (Zhu et&nbsp;al., 2025). Page built from the <a href="https://github.com/eliahuhorwitz/Academic-project-page-template">Academic Project Page Template</a>.</p>
+</div></footer>
+<script>
+const CD={"qr": {"n": [[0, 0.0018], [200, 0.0803], [400, 0.0838], [600, 0.0875], [800, 0.0908], [1000, 0.0917], [1200, 0.094], [1400, 0.0952], [1600, 0.0955], [1800, 0.0938], [2000, 0.0958], [2200, 0.0957], [2400, 0.0962], [2600, 0.0963], [2800, 0.0982], [3000, 0.0995], [3200, 0.0989], [3400, 0.1006], [3600, 0.1025], [3800, 0.1015], [4000, 0.1025], [4200, 0.1018], [4400, 0.1033]], "r": [[0, 0.0015], [200, 0.1409], [400, 0.1515], [600, 0.1607], [800, 0.1708], [1000, 0.1742], [1200, 0.1772], [1400, 0.181], [1600, 0.1789], [1800, 0.1765], [2000, 0.1826], [2200, 0.1809], [2400, 0.18], [2600, 0.1794], [2800, 0.1856], [3000, 0.189], [3200, 0.1862], [3400, 0.1889], [3600, 0.1917], [3800, 0.19], [4000, 0.1919], [4200, 0.1914], [4400, 0.1934]]}, "qs": {"n": [[0, 0.0018], [200, 0.0807], [400, 0.0821], [600, 0.0845], [800, 0.0859], [1000, 0.0878], [1200, 0.0872], [1400, 0.0877], [1600, 0.0897], [1800, 0.0898], [2000, 0.0896], [2200, 0.0915], [2400, 0.0918], [2600, 0.0892], [2800, 0.0914], [3000, 0.0909]], "r": [[0, 0.0014], [200, 0.1432], [400, 0.1479], [600, 0.1545], [800, 0.1586], [1000, 0.1639], [1200, 0.1635], [1400, 0.1637], [1600, 0.1691], [1800, 0.1684], [2000, 0.1695], [2200, 0.1721], [2400, 0.1734], [2600, 0.1671], [2800, 0.1738], [3000, 0.1727]]}};
+function mk(id,key,label){
+ const r=CD.qr[key], s=CD.qs[key];
+ new Chart(document.getElementById(id),{type:'line',
+  data:{datasets:[
+   {label:'Rank-level (ours)',data:r.map(p=>({x:p[0],y:p[1]})),borderColor:'#3273dc',backgroundColor:'#3273dc',tension:.2},
+   {label:'Sequence-level',data:s.map(p=>({x:p[0],y:p[1]})),borderColor:'#e74c3c',backgroundColor:'#e74c3c',tension:.2}]},
+  options:{responsive:true,plugins:{title:{display:true,text:label+' vs step'}},
+   scales:{x:{type:'linear',title:{display:true,text:'training step'}},y:{title:{display:true,text:label}}}}});
+}
+mk('ndcg','n','NDCG@20'); mk('recall','r','Recall@20');
+</script></body></html>

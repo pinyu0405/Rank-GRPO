@@ -1,0 +1,24 @@
+# Rank-GRPO — tested working environment (Python 3.10, CUDA 12.x driver).
+# IMPORTANT: install torch FIRST from the cu126 index, then the rest, e.g.:
+#   pip install torch==2.7.1 torchvision==0.22.1 torchaudio==2.7.1 --index-url https://download.pytorch.org/whl/cu126
+#   pip install -r requirements.txt
+# Do NOT `pip install -U huggingface_hub` — hub 1.x breaks transformers/tokenizers.
+# After installing, run `bash INSTALL.SH` to copy the patched trainer into the trl package.
+
+torch==2.7.1
+torchvision==0.22.1
+torchaudio==2.7.1
+vllm==0.10.0
+transformers==4.55.4
+tokenizers==0.21.4
+huggingface_hub<1.0
+trl==0.21.0
+accelerate>=1.0
+deepspeed
+bitsandbytes
+datasets
+editdistance
+wandb
+numpy<2
+matplotlib
+seaborn

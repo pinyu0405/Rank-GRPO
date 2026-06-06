@@ -12,3 +12,24 @@ __pycache__/
 # Training artifacts / outputs
 wandb/
 results/
+eval_results/
+output_val.pkl
+watch_catalog.py
+
+#claude
+.claude
+
+#configs
+configs/llama_a6000.yaml
+configs/qwen25_0.5b_grpo_3080.yaml
+
+#catalog
+watch_catalog.py
+gt_catalog.pkl
+
+#final project
+final_project/
+
+#run
+run_llama.sh
+run_qwen.sh
